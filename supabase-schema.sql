@@ -572,3 +572,22 @@ language sql stable security definer set search_path = '' as $$
 $$;
 revoke all on function public.get_my_class_activities() from public, anon;
 grant execute on function public.get_my_class_activities() to authenticated;
+
+-- Foto del estudiante para el docente: ropa/accesorio puesto y lo que tiene comprado.
+drop function if exists public.get_class_progress();
+create function public.get_class_progress()
+returns table(teacher_class_id text, student_id uuid, student_name text, student_email text, student_grade text, done jsonb, last_sync timestamptz, scores jsonb, student_look jsonb)
+language sql stable security definer set search_path = '' as $$
+  select m.teacher_class_id, s.id, s.name, s.email, s.grade,
+    case when jsonb_typeof(s.app_state->'teacherActivitiesDone') = 'array' then s.app_state->'teacherActivitiesDone' else '[]'::jsonb end,
+    s.updated_at,
+    (case when jsonb_typeof(s.app_state->'activityScores') = 'object' then s.app_state->'activityScores' else '{}'::jsonb end)
+    || (case when jsonb_typeof(s.app_state->'activityFirstScores') = 'object' then s.app_state->'activityFirstScores' else '{}'::jsonb end),
+    jsonb_build_object(
+      'equipped', case when jsonb_typeof(s.app_state->'equipped') = 'object' then s.app_state->'equipped' else '{}'::jsonb end,
+      'owned', case when jsonb_typeof(s.app_state->'owned') = 'array' then s.app_state->'owned' else '[]'::jsonb end)
+  from public.class_memberships m join public.profiles s on s.id = m.student_id
+  where m.teacher_id = (select auth.uid());
+$$;
+revoke all on function public.get_class_progress() from public, anon;
+grant execute on function public.get_class_progress() to authenticated;
