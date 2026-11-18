@@ -1,0 +1,14 @@
+{
+  "name": "Aula ya! — Aprende jugando",
+  "short_name": "Aula ya!",
+  "description": "Aprende con Teo, incluso sin conexión.",
+  "lang": "es-CO",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbfcf6",
+  "theme_color": "#006348",
+  "icons": [
+    { "src": "assets/aulaya-mascot.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

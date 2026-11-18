@@ -1,0 +1,14 @@
+{
+  "name": "aulaya-offline-assistant",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build:ai": "esbuild teo-ai.js --bundle --format=iife --target=es2022 --outfile=assets/teo-ai.bundle.js"
+  },
+  "dependencies": {
+    "@mlc-ai/web-llm": "^0.2.80"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
