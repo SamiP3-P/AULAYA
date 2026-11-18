@@ -551,3 +551,24 @@ language sql stable security definer set search_path = '' as $$
   from public.class_memberships m join public.profiles s on s.id = m.student_id
   where m.teacher_id = (select auth.uid());
 $$;
+
+-- Materias de la clase para el estudiante (todas, una o varias, según lo que eligió el docente).
+drop function if exists public.get_my_class_activities();
+create function public.get_my_class_activities()
+returns table(teacher_class_id text, teacher_name text, class_label text, activities jsonb, joined_at timestamptz, teacher_avatar text, class_subjects jsonb)
+language sql stable security definer set search_path = '' as $$
+  select membership.teacher_class_id, teacher.name,
+    concat_ws(' ', owned_class.value->>'grade', owned_class.value->>'sectionLabel'),
+    coalesce((select jsonb_agg(act.value) from jsonb_array_elements(coalesce(owned_class.value->'activities', '[]'::jsonb)) as act(value)
+      where jsonb_typeof(act.value->'assignedTo') is distinct from 'array' or jsonb_array_length(act.value->'assignedTo') = 0
+         or (act.value->'assignedTo') ? ((select auth.uid())::text)), '[]'::jsonb),
+    membership.created_at, teacher.app_state->>'teacherAvatar',
+    case when jsonb_typeof(owned_class.value->'subjects') = 'array' then owned_class.value->'subjects' else '[]'::jsonb end
+  from public.class_memberships membership
+  join public.profiles teacher on teacher.id = membership.teacher_id
+  join lateral jsonb_array_elements(coalesce(teacher.app_state->'teacherClasses', '[]'::jsonb)) as owned_class(value)
+    on owned_class.value->>'id' = membership.teacher_class_id
+  where membership.student_id = (select auth.uid());
+$$;
+revoke all on function public.get_my_class_activities() from public, anon;
+grant execute on function public.get_my_class_activities() to authenticated;
